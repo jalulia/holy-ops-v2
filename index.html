@@ -247,6 +247,8 @@ stroke:var(--w40);opacity:.5;animation:illumBreath 1.8s ease-in-out infinite}
 @keyframes illumAcid{0%,100%{opacity:.25}50%{opacity:.38}}
 [data-vibe="boom"] .illum-zone.active path{animation:illumBoom 3s ease-in-out infinite}
 @keyframes illumBoom{0%,100%{opacity:.2}50%{opacity:.35}}
+[data-vibe="sampler"] .illum-zone.active path{animation:illumSampler 2.5s ease-in-out infinite}
+@keyframes illumSampler{0%,100%{opacity:.18}50%{opacity:.34}}
 @keyframes slotBurst{0%{box-shadow:0 0 0 0 var(--saint-color)}100%{box-shadow:0 0 30px 15px transparent}}
 .slot.burst{animation:slotBurst .5s ease-out}
 @keyframes rejectShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% + 6px),-50%)}75%{transform:translate(calc(-50% - 6px),-50%)}}
@@ -410,6 +412,22 @@ border-radius:8px;display:none;align-items:center;justify-content:center;
 border:none;opacity:0;transition:opacity .15s;background:transparent;overflow:hidden}
 #drag-ghost.active{display:flex;opacity:.9}
 #visualizer{position:absolute;bottom:0;left:0;right:0;height:60px;pointer-events:none;opacity:.25}
+/* Vox Populi recording UI */
+.niche-rec-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,80,40,.6);
+background:rgba(255,80,40,.15);cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;
+transition:all .3s}
+.niche-rec-btn:hover{background:rgba(255,80,40,.35);border-color:rgba(255,80,40,.9);transform:translate(-50%,-60%) scale(1.1)}
+.niche-rec-btn .rec-dot{width:10px;height:10px;border-radius:50%;background:#FF4500}
+.niche-rec-btn.recording{animation:recPulse 1s ease-in-out infinite;border-color:#FF4500;background:rgba(255,80,40,.3)}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,0,.4)}50%{box-shadow:0 0 12px 4px rgba(255,69,0,.3)}}
+.niche-rec-btn .rec-countdown{font-size:8px;color:#FF4500;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.niche-waveform{position:absolute;top:10%;left:10%;width:80%;height:45%;z-index:1;pointer-events:none}
+.niche-waveform canvas{width:100%;height:100%}
+.niche-re-record{position:absolute;top:3px;left:3px;z-index:3;width:14px;height:14px;border-radius:50%;
+border:1px solid rgba(255,80,40,.4);background:rgba(10,10,10,.8);cursor:pointer;display:flex;align-items:center;justify-content:center;
+font-size:6px;color:rgba(255,80,40,.6);transition:all .2s}
+.niche-re-record:hover{border-color:#FF4500;color:#FF4500;background:rgba(10,10,10,.95)}
 @media(max-width:960px){#authenticum{display:none}}
 @media(max-width:640px){
 /* ═══ MOBILE: fixed 100vh, no page scroll ═══ */
@@ -1942,6 +1960,16 @@ const SAINTS=[
 {id:'catena_b',name:'Catena',desc:'Chain rattle — metallic resonant tremolo',type:'generator',role:'chain'},
 {id:'ignis_b',name:'Ignis',desc:'Flame sweep — rising bandpass scream',type:'generator',role:'sweep'},
 {id:'quantizer',name:'Qvantisor',desc:'Pitch quantizer — forces all voices into Hijaz scale',type:'modifier',role:'modifier'}]}
+,{id:'voxpopuli',name:'Vox Populi',key:'F#m',freq:185.00,color:'#FF6B35',vibe:'Voice of the people',vibeTag:'sampler',imgIdx:13,relics:[
+{id:'verbum',name:'Verbum',desc:'The word — raw unprocessed playback of your voice',type:'generator',role:'verbum'},
+{id:'echo_vp',name:'Echo',desc:'Echo — tempo-synced delay repeats',type:'generator',role:'echo_vp'},
+{id:'cantus',name:'Cantus',desc:'Song — pitch-shifted up 5 semitones',type:'generator',role:'cantus'},
+{id:'murmur',name:'Murmur',desc:'Whisper — filtered and reverb-drenched',type:'generator',role:'murmur'},
+{id:'clamor_vp',name:'Clamor',desc:'Shout — distorted through waveshaper',type:'generator',role:'clamor_vp'},
+{id:'spiritus',name:'Spiritus',desc:'Breath — granular random slices',type:'generator',role:'spiritus'},
+{id:'umbra_vp',name:'Umbra',desc:'Shadow — pitch-shifted down 7 semitones',type:'generator',role:'umbra_vp'},
+{id:'fragmentum',name:'Fragmentum',desc:'Fragment — gated 100ms stutter',type:'generator',role:'fragmentum'},
+{id:'speculum_vp',name:'Speculum',desc:'Mirror — reversed playback',type:'generator',role:'speculum_vp'}]}
 ];
 
 const SLOT_POS=[
@@ -1972,7 +2000,10 @@ const FREQ_WEIGHT={
   clock:'light',shimmer:'light',snap:'light',tremolo:'light',accent:'light',
   echo:'light',lightning:'light',spring:'light',high:'light',clap:'light',
   pad:'ambient',breath:'ambient',modifier:'ambient',texture:'ambient',
-  swell:'ambient',phaser:'ambient',delay:'ambient',fire:'ambient'
+  swell:'ambient',phaser:'ambient',delay:'ambient',fire:'ambient',
+  // Vox Populi sampler roles
+  verbum:'mid',echo_vp:'ambient',cantus:'mid',murmur:'ambient',
+  clamor_vp:'mid',spiritus:'light',umbra_vp:'heavy',fragmentum:'mid',speculum_vp:'mid'
 };
 
 // ══════ POLYRHYTHMIC LFO BREATHING SYSTEM ══════
@@ -1993,6 +2024,7 @@ const SAINT_LFO_RATIOS={
   paprika:    {num:7,den:6,ampDepth:0.12,detuneDepth:5,filterRange:600},// 51s — dream drift
   robin:      {num:8,den:5,ampDepth:0.06,filterRange:150},
   barbara:    {num:7,den:3,ampDepth:0.04,filterRange:200},// fast, aggressive breathing
+  voxpopuli:  {num:3,den:2,ampDepth:0.08,detuneDepth:3,filterRange:500},// steady human breathing
 };
 const SAINT_LFOS={};// Runtime: {lfo, ampGain, detuneGain, refCount, startTime}
 // Role → filter config for per-voice timbral modulation
@@ -2019,6 +2051,12 @@ const LFO_FILTER_MAP={
   fill:{type:'highpass',freq:3000,Q:2},
   chain:{type:'bandpass',freq:1500,Q:2},
   sweep:{type:'bandpass',freq:1000,Q:4},
+  // Vox Populi sampler roles
+  verbum:{type:'bandpass',freq:1200,Q:1.0},echo_vp:{type:'lowpass',freq:3000,Q:0.5},
+  cantus:{type:'bandpass',freq:2000,Q:1.5},murmur:{type:'lowpass',freq:800,Q:2.0},
+  clamor_vp:{type:'highpass',freq:200,Q:1.0},spiritus:{type:'bandpass',freq:1500,Q:1.2},
+  umbra_vp:{type:'lowpass',freq:600,Q:1.5},fragmentum:{type:'bandpass',freq:1200,Q:1.0},
+  speculum_vp:{type:'bandpass',freq:1200,Q:1.0},
   // Roles that don't get a filter
   modifier:null,phaser:null,tremolo:null,
 };
@@ -2244,8 +2282,9 @@ setInterval(()=>{
         now,0.5
       );
     }
-    // Volume fade
-    v.output.gain.setTargetAtTime(0.7*(1-decay*0.8),now,0.5);
+    // Volume fade — uses decayGain to avoid conflicting with voice output scheduling
+    if(v.decayGain)v.decayGain.gain.setTargetAtTime(1-decay*0.8,now,0.5);
+    else v.output.gain.setTargetAtTime(0.7*(1-decay*0.8),now,0.5);
     // Visual: decay slot opacity and desaturation
     const sl=document.querySelector('.slot[data-index="'+idx+'"]');
     if(sl){
@@ -2286,14 +2325,17 @@ function triggerVoice(v,time,step,sd){
     const slide=sd.slide||false;
     v.synthFn(AC.ctx,v,time,dur,hz,vel,acc,slide,step);
     // Task 3: Sidechain ducking — heavy voices duck the room bus and ambient voices
+    // Uses cancelScheduledValues + setTargetAtTime for smooth transitions (no clicks)
     if(v.freqWeight==='heavy'){
       if(ROOM.sidechainGain){
-        ROOM.sidechainGain.gain.setValueAtTime(0.3,time);
+        ROOM.sidechainGain.gain.cancelScheduledValues(time);
+        ROOM.sidechainGain.gain.setTargetAtTime(0.3,time,0.005);
         ROOM.sidechainGain.gain.setTargetAtTime(1.0,time+0.02,0.15);
       }
       Object.values(VOICES).forEach(ov=>{
         if(ov!==v&&ov.freqWeight==='ambient'&&ov.output){
-          ov.output.gain.setValueAtTime(ov.output.gain.value*0.7,time);
+          ov.output.gain.cancelScheduledValues(time);
+          ov.output.gain.setTargetAtTime(ov.output.gain.value*0.7,time,0.005);
           ov.output.gain.setTargetAtTime(0.7,time+0.02,0.15);
         }
       });
@@ -3702,6 +3744,8 @@ const K={
   B: [246.94,277.18,311.13,329.63,369.99,415.30,466.16,493.88,554.37,622.25],
   // F# Hijaz (microtonal): F# G(b2) Bb(3) B(4) C#(5) D(b6) E(b7) — Arabic tuning
   'F#':[185.00,194.18,235.47,246.94,277.18,293.66,329.63,370.00,388.36,470.94],
+  // F#m natural minor: F# G# A B C# D E
+  'F#m':[185.00,207.65,220.00,246.94,277.18,293.66,329.63,370.00,415.30,440.00],
 };
 function s(key,deg,vel,acc,slide){return{hz:K[key][deg]||K[key][0],v:vel||0.75,acc:!!acc,slide:!!slide};}
 function sb(key,deg,vel,acc,slide){return{hz:(K[key][deg]||K[key][0])*0.5,v:vel||0.75,acc:!!acc,slide:!!slide};}
@@ -3885,6 +3929,18 @@ const PATTERNS={
     // Sweep: rising scream once per 2 bars (sparse)
     ignis_b:   [s('F#',0,.55),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
   },
+  voxpopuli:{
+    // Simple rhythmic grid — user records their own sounds, so patterns are utilitarian
+    verbum:      [s('F#m',0,.75),null,null,null,s('F#m',0,.7),null,null,null,s('F#m',0,.72),null,null,null,s('F#m',0,.7),null,null,null],
+    echo_vp:     [s('F#m',0,.6),null,null,null,null,null,null,null,s('F#m',0,.55),null,null,null,null,null,null,null],
+    cantus:      [null,null,s('F#m',0,.65),null,null,null,s('F#m',0,.6),null,null,null,s('F#m',0,.65),null,null,null,s('F#m',0,.6),null],
+    murmur:      [s('F#m',0,.5),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    clamor_vp:   [null,null,null,null,s('F#m',0,.8),null,null,null,null,null,null,null,s('F#m',0,.75),null,null,null],
+    spiritus:    [s('F#m',0,.55),null,s('F#m',0,.45),null,s('F#m',0,.5),null,s('F#m',0,.45),null,s('F#m',0,.55),null,s('F#m',0,.45),null,s('F#m',0,.5),null,s('F#m',0,.45),null],
+    umbra_vp:    [s('F#m',0,.6),null,null,null,null,null,null,null,s('F#m',0,.55),null,null,null,null,null,null,null],
+    fragmentum:  [s('F#m',0,.7),s('F#m',0,.5),null,s('F#m',0,.55),s('F#m',0,.7),s('F#m',0,.5),null,s('F#m',0,.55),s('F#m',0,.7),s('F#m',0,.5),null,s('F#m',0,.55),s('F#m',0,.7),s('F#m',0,.5),null,s('F#m',0,.55)],
+    speculum_vp: [s('F#m',0,.65),null,null,null,null,null,null,null,s('F#m',0,.6),null,null,null,null,null,null,null],
+  },
 };
 
 // ══════ SAINT BARBARA SYNTHESIS — Acid Maqam / Levantine Artillery ══════
@@ -4032,6 +4088,76 @@ function synthBarbara(c,v,t,dur,hz,vel,acc,slide,step){
   }
 }
 
+// ══════ VOX POPULI SYNTHESIS — Sampler Saint ══════
+function synthVoxPopuli(c,v,t,dur,hz,vel,acc,slide,step){
+  const o=_out(v);
+  const buf=v.relic._recordedBuffer;
+  if(!buf)return;// no recording yet — silence
+
+  const rid=v.relic.role;
+  const src=c.createBufferSource();
+
+  // Mirror: reverse the buffer
+  if(rid==='speculum_vp'){
+    const reversed=c.createBuffer(buf.numberOfChannels,buf.length,buf.sampleRate);
+    for(let ch=0;ch<buf.numberOfChannels;ch++){
+      const fwd=buf.getChannelData(ch);const rev=reversed.getChannelData(ch);
+      for(let i=0;i<fwd.length;i++)rev[i]=fwd[fwd.length-1-i];
+    }
+    src.buffer=reversed;
+  }else{
+    src.buffer=buf;
+  }
+
+  // Pitch shifting via playbackRate
+  if(rid==='cantus')src.playbackRate.value=1.335;// +5 semitones
+  else if(rid==='umbra_vp')src.playbackRate.value=0.63;// -7 semitones
+
+  const e=c.createGain();
+  e.gain.setValueAtTime(vel*0.5,t);
+  e.gain.setTargetAtTime(0.001,t+dur*1.5,dur*0.3);
+
+  // Effect chains per role
+  if(rid==='echo_vp'){
+    // Tempo-synced delay
+    const dly=c.createDelay(2);dly.delayTime.value=STEP_DUR*3;
+    const fb=c.createGain();fb.gain.value=0.4;
+    const dlyWet=c.createGain();dlyWet.gain.value=0.45;
+    src.connect(e);e.connect(o);
+    e.connect(dly);dly.connect(fb);fb.connect(dly);dly.connect(dlyWet);dlyWet.connect(o);
+  }else if(rid==='murmur'){
+    // Heavily filtered + reverb-heavy
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=800;lp.Q.value=4;
+    const wet=c.createGain();wet.gain.value=0.7;
+    src.connect(e);e.connect(lp);lp.connect(o);
+    if(AC.reverbSend){lp.connect(wet);wet.connect(AC.reverbSend);}
+  }else if(rid==='clamor_vp'){
+    // Distorted through waveshaper + HP
+    const ws=c.createWaveShaper();
+    const k=4,ns=44100,curve=new Float32Array(ns);
+    for(let i=0;i<ns;i++){const x=i*2/ns-1;curve[i]=Math.tanh(k*x);}
+    ws.curve=curve;ws.oversample='2x';
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=200;
+    src.connect(ws);ws.connect(hp);hp.connect(e);e.connect(o);
+  }else{
+    // Default: direct connection (verbum, cantus, umbra_vp, spiritus, fragmentum, speculum_vp)
+    src.connect(e);e.connect(o);
+  }
+
+  // Start/stop logic per role
+  if(rid==='fragmentum'){
+    // Only play first 100ms, gated and stuttered
+    src.start(t,0,0.1);
+  }else if(rid==='spiritus'){
+    // Granular: random 50ms slice
+    const offset=Math.random()*Math.max(0,buf.duration-0.05);
+    src.start(t,offset,0.05);
+  }else{
+    src.start(t);
+    src.stop(t+Math.min(buf.duration/(src.playbackRate.value||1),dur*2));
+  }
+}
+
 const SYNTH_FNS={
   bartholomew:synthBarth,
   lawrence:synthLawr,
@@ -4046,6 +4172,7 @@ const SYNTH_FNS={
   paprika:synthPaprika,
   robin:synthRobin,
   barbara:synthBarbara,
+  voxpopuli:synthVoxPopuli,
 };
 
 // ══════ POLYRHYTHMIC LFO LIFECYCLE ══════
@@ -4099,8 +4226,12 @@ function buildVoice(relic,saint,outputNode){
     sl.detuneGain.connect(lfoFilter.frequency);
   }
 
+  // Temporal decay uses a separate gain node to avoid conflicting with voice output scheduling
+  const decayGain=c.createGain();decayGain.gain.value=1.0;
+  decayGain.connect(dest);// decayGain sits between voice chain and destination
+
   if(saint.id==='bartholomew'){
-    // Chopped & screwed signal chain: voice → boost → lowpass (underwater) → flanger → dest
+    // Chopped & screwed signal chain: voice → boost → lowpass (underwater) → flanger → decayGain → dest
     const screwBoost=c.createGain();screwBoost.gain.value=1.4;
     const screwLP=c.createBiquadFilter();screwLP.type='lowpass';screwLP.frequency.value=5000;screwLP.Q.value=0.6;
     const flDry=c.createGain();flDry.gain.value=0.7;
@@ -4113,21 +4244,21 @@ function buildVoice(relic,saint,outputNode){
     flDelay.connect(flFb);flFb.connect(flDelay);
     flDelay.connect(flWet);
     screwLP.connect(flDry);screwLP.connect(flDelay);
-    flDry.connect(dest);flWet.connect(dest);
+    flDry.connect(decayGain);flWet.connect(decayGain);
     // Insert LFO filter before screw chain if available
     if(lfoFilter){vg.connect(lfoFilter);lfoFilter.connect(screwBoost);}
     else{vg.connect(screwBoost);}
     screwBoost.connect(screwLP);
     vg._screwLfo=flLfo;
   }else{
-    // Insert LFO filter in the chain: vg → lfoFilter → dest
-    if(lfoFilter){vg.connect(lfoFilter);lfoFilter.connect(dest);}
-    else{vg.connect(dest);}
+    // Insert LFO filter in the chain: vg → lfoFilter → decayGain → dest
+    if(lfoFilter){vg.connect(lfoFilter);lfoFilter.connect(decayGain);}
+    else{vg.connect(decayGain);}
   }
   if(saint.id!=='bartholomew'&&relic.id!=='patella')vg.connect(AC.reverbSend);
   const pattern=(PATTERNS[saint.id]&&PATTERNS[saint.id][relic.id])||null;
   const synthFn=SYNTH_FNS[saint.id]||null;
-  return{output:vg,pattern,synthFn,saint,relic,_lfoFilter:lfoFilter,freqWeight:FREQ_WEIGHT[relic.role]||'mid'};
+  return{output:vg,decayGain,pattern,synthFn,saint,relic,_lfoFilter:lfoFilter,freqWeight:FREQ_WEIGHT[relic.role]||'mid'};
 }
 
 // ══════ VOTIVE SYNTHESIS ══════
@@ -4685,7 +4816,9 @@ const SAINT_ICONS=[
   // Robin — bow and arrow
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4,2 Q2,8 4,14"/><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="8" x2="14" y2="8"/><path d="M12,6 L14,8 L12,10"/></svg>',
   // Barbara — lightning bolt + tower
-  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="5" y="6" width="6" height="8" rx=".5"/><path d="M5,6 L5,4 Q8,2 11,4 L11,6"/><path d="M9,1 L7,6 L9,6 L6,11" stroke-width="1.5"/></svg>'
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="5" y="6" width="6" height="8" rx=".5"/><path d="M5,6 L5,4 Q8,2 11,4 L11,6"/><path d="M9,1 L7,6 L9,6 L6,11" stroke-width="1.5"/></svg>',
+  // Vox Populi — microphone
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="6" y="2" width="4" height="7" rx="2"/><path d="M4,8 Q4,12 8,12 Q12,12 12,8"/><line x1="8" y1="12" x2="8" y2="14"/><line x1="6" y1="14" x2="10" y2="14"/></svg>'
 ];
 // ══════ UI: SAINT ACCORDION ══════
 // ══════ SAINT SILHOUETTES — per-saint SVGs for body-mapped relic layout ══════
@@ -4711,6 +4844,70 @@ function selectSaint(idx){
   renderCarousel();renderRelicGrid();resetIdleTimer();
 }
 
+// ══════ VOX POPULI RECORDING ══════
+let _vpMicStream=null;
+function drawMiniWaveform(canvas,buf){
+  const cx=canvas.getContext('2d');const w=canvas.width=canvas.offsetWidth*2;const h=canvas.height=canvas.offsetHeight*2;
+  cx.scale(2,2);cx.clearRect(0,0,w/2,h/2);
+  const data=buf.getChannelData(0);const step=Math.ceil(data.length/(w/2));
+  cx.strokeStyle='rgba(255,107,53,0.6)';cx.lineWidth=1;cx.beginPath();
+  for(let i=0;i<w/2;i++){
+    let min=1,max=-1;
+    for(let j=0;j<step;j++){const d=data[(i*step)+j];if(d<min)min=d;if(d>max)max=d;}
+    cx.moveTo(i,(1+min)*h/4);cx.lineTo(i,(1+max)*h/4);
+  }
+  cx.stroke();
+}
+function recordForRelic(relic,nicheEl){
+  if(nicheEl._recording)return;
+  nicheEl._recording=true;
+  const recBtn=nicheEl.querySelector('.niche-rec-btn');
+  if(!recBtn)return;
+  recBtn.classList.add('recording');
+  const dot=recBtn.querySelector('.rec-dot');
+  if(dot)dot.style.display='none';
+  let countdown=2;
+  const cdEl=document.createElement('span');cdEl.className='rec-countdown';cdEl.textContent=countdown;
+  recBtn.appendChild(cdEl);
+
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    _vpMicStream=stream;
+    const recorder=new MediaRecorder(stream);
+    const chunks=[];
+    recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+    recorder.onstop=()=>{
+      stream.getTracks().forEach(t=>t.stop());_vpMicStream=null;
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      blob.arrayBuffer().then(ab=>{
+        if(!AC.ctx)initAudio();
+        AC.ctx.decodeAudioData(ab).then(audioBuf=>{
+          // Trim to 2 seconds max
+          const maxSamples=Math.min(audioBuf.length,audioBuf.sampleRate*2);
+          const trimmed=AC.ctx.createBuffer(audioBuf.numberOfChannels,maxSamples,audioBuf.sampleRate);
+          for(let ch=0;ch<audioBuf.numberOfChannels;ch++){
+            trimmed.copyToChannel(audioBuf.getChannelData(ch).slice(0,maxSamples),ch);
+          }
+          relic._recordedBuffer=trimmed;
+          nicheEl._recording=false;
+          renderRelicGrid();// refresh to show waveform
+        }).catch(()=>{nicheEl._recording=false;renderRelicGrid();});
+      });
+    };
+    recorder.start();
+    const cdInterval=setInterval(()=>{countdown--;if(cdEl.parentNode)cdEl.textContent=countdown;},1000);
+    setTimeout(()=>{
+      clearInterval(cdInterval);
+      if(recorder.state==='recording')recorder.stop();
+    },2000);
+  }).catch(err=>{
+    console.warn('Mic access denied:',err);
+    nicheEl._recording=false;
+    recBtn.classList.remove('recording');
+    if(dot)dot.style.display='';
+    if(cdEl.parentNode)cdEl.remove();
+  });
+}
+
 function renderRelicGrid(){
   const cab=document.getElementById('relic-cabinet');if(!cab)return;cab.innerHTML='';
   const saint=SAINTS[currentSaintIdx];const si=currentSaintIdx;
@@ -4719,13 +4916,47 @@ function renderRelicGrid(){
     niche.dataset.relicId=r.id;
     if(slots.some(s=>s&&s.relic.id===r.id))niche.classList.add('placed');
     const imgPath='assets/'+RELIC_IMGS[(si*9+ri)%RELIC_IMGS.length];
-    niche.innerHTML='<img class="relic-img" src="'+imgPath+'" alt="" draggable="false">'+
-      '<span class="rname">'+r.name+'</span>'+
-      '<span class="rtype">'+(r.type==='clock'?'clk':r.type==='modifier'?'mod':'gen')+'</span>';
+    const isVP=saint.id==='voxpopuli';
+    const hasBuf=!!r._recordedBuffer;
+    if(isVP&&hasBuf){
+      // Show waveform preview + re-record button
+      niche.innerHTML='<div class="niche-waveform"><canvas></canvas></div>'+
+        '<div class="niche-re-record" title="Re-record">&#8635;</div>'+
+        '<span class="rname">'+r.name+'</span>'+
+        '<span class="rtype">rec</span>';
+    }else if(isVP&&!hasBuf){
+      // Show record button
+      niche.innerHTML='<div class="niche-rec-btn"><span class="rec-dot"></span></div>'+
+        '<span class="rname">'+r.name+'</span>'+
+        '<span class="rtype">rec</span>';
+    }else{
+      niche.innerHTML='<img class="relic-img" src="'+imgPath+'" alt="" draggable="false">'+
+        '<span class="rname">'+r.name+'</span>'+
+        '<span class="rtype">'+(r.type==='clock'?'clk':r.type==='modifier'?'mod':'gen')+'</span>';
+    }
     niche.title=r.desc;
+    // Vox Populi recording interactions
+    if(isVP&&!hasBuf&&!niche.classList.contains('placed')){
+      const recBtn=niche.querySelector('.niche-rec-btn');
+      if(recBtn)recBtn.addEventListener('click',e=>{e.stopPropagation();recordForRelic(r,niche);});
+    }
+    if(isVP&&hasBuf){
+      // Draw waveform after DOM insertion
+      setTimeout(()=>{
+        const cv=niche.querySelector('.niche-waveform canvas');
+        if(cv)drawMiniWaveform(cv,r._recordedBuffer);
+      },10);
+      // Re-record button
+      const reRec=niche.querySelector('.niche-re-record');
+      if(reRec)reRec.addEventListener('click',e=>{e.stopPropagation();r._recordedBuffer=null;renderRelicGrid();});
+    }
     if(!niche.classList.contains('placed')){
-      niche.addEventListener('pointerdown',e=>startDrag(e,r,saint,niche));
+      // Only allow drag/place if Vox Populi relic has a recording, or if not Vox Populi
+      if(!isVP||hasBuf){
+        niche.addEventListener('pointerdown',e=>startDrag(e,r,saint,niche));
+      }
       niche.addEventListener('click',e=>{
+        if(isVP&&!hasBuf)return;// don't preview/place unrecorded VP relics
         if(!AC.ctx){initAudio();startSequencer();}
         playRelicPreview(r,saint);
         // Tap-to-place: on touch devices, select this relic for placement
@@ -5124,7 +5355,7 @@ function removeFromSlot(idx,silent){
     if(s.voice._lfoFilter)try{s.voice._lfoFilter.disconnect();}catch(e){}
     // Release saint LFO reference
     if(s.voice.saint)releaseSaintLFO(s.voice.saint);
-    setTimeout(()=>{try{s.voice.output.disconnect();}catch(e){}},250);
+    setTimeout(()=>{try{s.voice.output.disconnect();}catch(e){}try{if(s.voice.decayGain)s.voice.decayGain.disconnect();}catch(e){}},250);
   }
   delete VOICES[idx];slots[idx]=null;updateDensity();
   if(!silent){renderSlots();renderRelicGrid();renderAuth();}
@@ -5139,7 +5370,7 @@ function removeFromSlot(idx,silent){
 function drawViz(){
   const cv=document.getElementById('visualizer'),cx=cv.getContext('2d');
   cv.width=cv.offsetWidth*2;cv.height=cv.offsetHeight*2;cx.scale(2,2);
-  let sci=0;
+  let sci=0,vizFrame=0;
   (function loop(){requestAnimationFrame(loop);if(!AC.analyser)return;
   const w=cv.offsetWidth,h=cv.offsetHeight;cx.clearRect(0,0,w,h);
   const bl=AC.analyser.frequencyBinCount,data=new Uint8Array(bl);AC.analyser.getByteFrequencyData(data);
@@ -5149,10 +5380,14 @@ function drawViz(){
   const rr=parseInt(vc.slice(1,3),16)||255,gg=parseInt(vc.slice(3,5),16)||69,bb=parseInt(vc.slice(5,7),16)||0;
   cx.fillStyle='rgba('+rr+','+gg+','+bb+','+(val*0.4)+')';cx.fillRect(i*bw,h-bh,Math.max(bw-1,1),bh);}
   // Task 1: Reactive visual saturation — pulse illum zones with audio energy
+  // Throttled to every 4th frame to reduce main thread contention during audio scheduling
+  vizFrame++;
+  if(vizFrame%4===0){
   let bassE=0,midE=0;for(let b=0;b<Math.min(8,bl);b++)bassE+=data[b];for(let b=8;b<Math.min(32,bl);b++)midE+=data[b];
   bassE=Math.min(bassE/(8*255),1);midE=Math.min(midE/(24*255),1);
   for(let zi=0;zi<9;zi++){const zone=document.querySelector('.illum-zone[data-zone="'+zi+'"]');if(!zone||!zone.classList.contains('active'))continue;
     const pulse=Math.min(bassE*0.6+midE*0.4,1);zone.style.setProperty('--zone-pulse',pulse.toFixed(3));}
+  }
   })();
 }
 
