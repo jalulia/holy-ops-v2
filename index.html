@@ -3767,25 +3767,25 @@ const PATTERNS={
     cor_sy:    [sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null,sb('Db',0,.78),null,null,null],
   },
   paprika:{
-    // Am→Em→F→C, each chord 4 steps. The parade never stops.
-    // Chant hits on each chord change with sustain
-    somnium:   [s('Am',0,.65),null,null,null,s('Am',4,.6),null,null,null,s('Am',5,.62),null,null,null,s('Am',0,.58),null,null,null],
-    // Brass stabs on downbeats of each chord
-    pompa:     [s('Am',2,.72,1),null,null,null,s('Am',4,.68,1),null,null,null,s('Am',5,.7,1),null,null,null,s('Am',0,.66,1),null,null,null],
-    // March drums — every step gets either kick or snare
-    tympanum:  [s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55),s('Am',0,.85),s('Am',0,.55),s('Am',0,.8),s('Am',0,.55)],
-    // Gamelan bells — sparse, high register
-    campana_p: [null,null,s('Am',7,.48),null,null,null,null,null,null,null,s('Am',7,.44),null,null,null,null,null],
-    // Arp — ascending reflection on every other step
-    speculum:  [s('Am',0,.42),null,s('Am',2,.38),null,s('Am',4,.42),null,s('Am',2,.38),null,s('Am',5,.42),null,s('Am',4,.38),null,s('Am',0,.42),null,s('Am',2,.38),null],
-    // Dark pad — hits once per chord change, sustains
-    umbra_p:   [s('Am',0,.5),null,null,null,s('Am',4,.48),null,null,null,s('Am',5,.5),null,null,null,s('Am',0,.48),null,null,null],
-    // March clock — every beat
-    gressus:   [s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null,s('Am',0,.7),null,null,null],
-    // Vocal chops — erratic, ghostly
-    larva:     [null,null,null,s('Am',0,.4),null,null,s('Am',3,.38),null,null,null,null,s('Am',0,.42),null,null,null,s('Am',5,.36)],
-    // Morpheus — slow dream wash, hits once per bar
-    morpheus:  [s('Am',0,.35),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    // Am→Em→F→C — funky austere: space, groove, restraint. The parade sways.
+    // Chant: once per chord change, long sustain fills the gaps
+    somnium:   [s('Am',0,.55),null,null,null,null,null,null,null,s('Am',5,.5),null,null,null,null,null,null,null],
+    // Brass: only 2 stabs per bar — let them ring
+    pompa:     [null,null,null,null,s('Am',4,.6,1),null,null,null,null,null,null,null,null,null,s('Am',0,.55,1),null],
+    // Drums: half-time — kick on 1 only, snare on 3 only. Breathe.
+    tympanum:  [s('Am',0,.72),null,null,null,null,null,null,null,s('Am',0,.5),null,null,null,null,null,null,null],
+    // Gamelan: one bell per bar, late placement — the afterthought
+    campana_p: [null,null,null,null,null,null,null,null,null,null,null,s('Am',7,.42),null,null,null,null],
+    // Arp: sparse — 4 notes ascending then silence. Not constant 8ths.
+    speculum:  [s('Am',0,.38),null,null,s('Am',2,.35),null,null,s('Am',4,.38),null,null,null,null,null,null,null,null,null],
+    // Pad: once at the top, sustains across the whole bar
+    umbra_p:   [s('Am',0,.45),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    // Clock: half-time pulse, not four-on-the-floor
+    gressus:   [s('Am',0,.55),null,null,null,null,null,null,null,s('Am',0,.5),null,null,null,null,null,null,null],
+    // Vocal: one ghostly fragment per bar
+    larva:     [null,null,null,null,null,null,s('Am',3,.35),null,null,null,null,null,null,null,null,null],
+    // Morpheus: once per bar, barely there
+    morpheus:  [s('Am',0,.3),null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
   },
   robin:{
     // Whistle carries the melody — syncopated, jaunty
